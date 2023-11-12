@@ -79,7 +79,9 @@ public class ChessWebSocket extends WebSocketServer {
                 case GetPlayerAndRoomList:
                     game.sendPlayerAndRoomList(json.getJSONObject("data"));
                     break;
-
+                case Restart:
+                    game.restartRequest(json.getJSONObject("data"));
+                    break;
                 case Error:
                 default:
                     if (conn != null && conn.isOpen()) {

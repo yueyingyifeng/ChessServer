@@ -2,6 +2,7 @@ package org.yyyf;
 
 import org.yyyf.game.manager.PlayerManager;
 import org.yyyf.game.manager.RoomManager;
+import org.yyyf.game.tool.Log;
 import org.yyyf.net.ChessWebSocket;
 
 import java.net.InetAddress;
@@ -12,7 +13,10 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        ChessWebSocket socket = new ChessWebSocket(new InetSocketAddress("192.168.1.161",9900));
+        String ip = "localhost";
+        if(args.length >= 1 && args[0] != null) ip = args[0];
+        Log.i("Listen on " + ip);
+        ChessWebSocket socket = new ChessWebSocket(new InetSocketAddress(ip,9900));
         socket.start();
 
         new Thread(()->{
@@ -26,6 +30,9 @@ public class Main {
                        break;
                    case 2:
                        list ="room list: " + RoomManager.getInstance().getRoomList().toString();
+                       break;
+                   case -1:
+                        System.exit(1);
                        break;
                    case 0:
                    default:

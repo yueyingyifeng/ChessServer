@@ -1,5 +1,6 @@
 package org.yyyf.game.entity;
 
+import com.alibaba.fastjson.JSONArray;
 import org.yyyf.game.tool.Vector2D;
 
 import java.util.ArrayList;
@@ -70,5 +71,34 @@ public class Room {
 
     public int capacity() {
         return players.size();
+    }
+
+    public JSONArray getReadyPlayerIds() {
+        JSONArray jsonArray = new JSONArray();
+        for(Player p : players){
+            if(p.isReady()){
+                jsonArray.add(p.id);
+            }
+        }
+        return jsonArray;
+    }
+
+    public boolean isAllReady() {
+        for(Player p : players){
+            if(!p.isReady()) return false;
+        }
+        return true;
+    }
+
+    public void resetReadyState() {
+        for(Player p : players){
+            p.setReady(false);
+        }
+    }
+
+    public void resetBoard(){
+        for(Board b : boards){
+            b.reset();
+        }
     }
 }

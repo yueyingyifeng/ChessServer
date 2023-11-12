@@ -25,6 +25,10 @@ public class Board {
         this.id = id;
     }
 
+    public void reset(){
+        chess.clear();
+    }
+
     public int getId() {
         return id;
     }

@@ -10,13 +10,15 @@ import org.yyyf.game.manager.RoomManager;
 
 import org.java_websocket.WebSocket;
 import org.yyyf.game.tool.Code;
+import org.yyyf.game.tool.Log;
 import org.yyyf.game.tool.Vector2D;
 
 public class Game {
 
 
+
     public enum Type{
-        LeaveServer, JoinARoom, CreateRoom, PutChess, Error, LeaveRoom, HeartBeat, LoginServer,GameReadyToStart,GetPlayerAndRoomList
+        LeaveServer, JoinARoom, CreateRoom, PutChess, Error, LeaveRoom, HeartBeat, LoginServer,GameReadyToStart,GetPlayerAndRoomList,Restart
     }
     public Type analyze(int type) {
         switch (type){
@@ -38,6 +40,8 @@ public class Game {
                 return Type.HeartBeat;
             case Code.GetPlayerAndRoomList:
                 return Type.GetPlayerAndRoomList;
+            case Code.Restart:
+                return Type.Restart;
             default:
                 return Type.Error;
         }
@@ -82,11 +86,11 @@ public class Game {
 
         if(room.isRoomFull()){
             sleep(500);
-            sendPermissionToPlayer(player,!room.isRoomFull());
+            sendPermissionToPlayer(player,!room.isRoomFull(),Code.AcceptJoin);
             sendPlayerAndRoomList();
             return;
         }
-        sendPermissionToPlayer(player,!room.isRoomFull());
+        sendPermissionToPlayer(player,!room.isRoomFull(),Code.AcceptJoin);
 
         room.addPlayer(player);
         playerManager.recordPlayerAndRoom(hostId,guestId);   //记录玩家所在房间
@@ -101,20 +105,12 @@ public class Game {
         room.sendMsgToAllPlayerNotThisOne(jsonObject.toString(),guestId);
     }
 
-    private void sleep(int i) {
-        try {
-            Thread.sleep(i);
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 
     public void createRoom(JSONObject data) {
         int id = data.getIntValue("id");
         Player player = playerManager.findPlayerById(id);
         playerManager.recordPlayerAndRoom(id,id);
-        sendPermissionToPlayer(player,true);
+        sendPermissionToPlayer(player,true,Code.Accept);
 
         roomManager.createRoom(player);
         sendPlayerAndRoomList();
@@ -127,7 +123,7 @@ public class Game {
         Player player = playerManager.findPlayerById(id);
         Vector2D position = new Vector2D(v.getInteger("x"),v.getIntValue("y"));
 
-        sendPermissionToPlayer(player,true);
+        sendPermissionToPlayer(player,true,Code.Accept);
 
 
 
@@ -148,14 +144,17 @@ public class Game {
                 chessPackage.put("type",Code.SomeOnePutAChess);
                 chessPackage.put("data",chess);
                 room.sendMsgToAllPlayerNotThisOne(chessPackage.toString(),id);
-                sendPermissionToPlayer(player,true);
+                sendPermissionToPlayer(player,true,Code.Accept);
                 break;
             case refuse:
             default:
-                sendPermissionToPlayer(player,false);
+                sendPermissionToPlayer(player,false,Code.Accept);
         }
 
     }
+
+
+
 
     public void playerLeaveRoom(JSONObject data){
         int leaveId = data.getIntValue("id");
@@ -184,6 +183,7 @@ public class Game {
                 jsonObject.put("type",Code.SomeOneLeaveRoom);
                 jsonObject.put("data",idPackage(leaveId));
                 room.sendMsgToAllPlayerNotThisOne(jsonObject.toString(),leaveId);
+                room.resetBoard();
             }
 
             if(room != null && room.capacity() == 0){
@@ -216,7 +216,32 @@ public class Game {
         room.sendMsgToAllPlayerNotThisOne(jsonObject.toString(),hostId);
     }
 
+    public void restartRequest(JSONObject data) {
+        Integer id = data.getInteger("id");
+        if(id == null){
+            Log.e();
+            return;
+        }
+        Player player = playerManager.findPlayerById(id);
+        player.setReady(true);
+        //第一步：通过id获取玩家，然后将此玩家准备状态设为真（准备状态在玩家创建后一直为真，第一次加入房间时也应该一直为真）
+        //第二步：通过room返回房间内玩家的准备状态为真的列表
 
+        //预后：游戏结束，玩家离开房间，都需要将玩家的状态设为真，确保下次加入房间时可以直接开始游戏
+
+        Room room = roomManager.findRoomById(playerManager.findPlayerRoomId(id));
+        JSONObject d = new JSONObject();
+        d.put("ids",room.getReadyPlayerIds());
+        d.put("allReady",room.isAllReady());
+        JSONObject result = new JSONObject();
+        result.put("type",Code.RestartList);
+        result.put("data",d);
+        room.sendMsgToAllPlayer(result.toString());
+        if(room.isAllReady()){
+            room.resetReadyState();
+            room.resetBoard();
+        }
+    }
 
     public void playerLogIn(JSONObject data, WebSocket conn) {
         int id = PlayerIdManager.getInstance().getNewPlayerId();
@@ -250,9 +275,9 @@ public class Game {
         return jsonObject.toString();
     }
 
-    private void sendPermissionToPlayer(Player player, boolean permit){
+    private void sendPermissionToPlayer(Player player, boolean permit, int code){
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("type",Code.Accept);
+        jsonObject.put("type",code);
         jsonObject.put("accept",permit);
         player.conn.send(jsonObject.toString());
     }
@@ -268,4 +293,15 @@ public class Game {
         jsonObject.put("id",id);
         return jsonObject;
     }
+
+    private void sleep(int i) {
+        try {
+            Thread.sleep(i);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
 }
+// 8197 3956

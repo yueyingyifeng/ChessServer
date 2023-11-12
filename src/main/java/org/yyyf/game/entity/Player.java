@@ -6,6 +6,7 @@ public class Player {
     public int id;
     public String name;
     private boolean alive;
+    private boolean ready;
     public org.java_websocket.WebSocket conn;
 
     @Deprecated
@@ -27,5 +28,13 @@ public class Player {
 
     public void setAlive(boolean alive) {
         this.alive = alive;
+    }
+
+    public void setReady(boolean ready) {
+        this.ready = ready;
+    }
+
+    public boolean isReady() {
+        return ready;
     }
 }
