@@ -82,11 +82,14 @@ public class ChessWebSocket extends WebSocketServer {
                 case Restart:
                     game.restartRequest(json.getJSONObject("data"));
                     break;
+                case Regret:
+                    game.regret(json.getJSONObject("data"));
+                    break;
                 case Error:
                 default:
                     if (conn != null && conn.isOpen()) {
                         Log.i("Error Msg From:\n" + conn.getRemoteSocketAddress().toString());
-                        conn.send(game.ErrorMsg());
+                        conn.send(Game.ErrorMsg());
                     }
             }
         } catch (Exception e) {

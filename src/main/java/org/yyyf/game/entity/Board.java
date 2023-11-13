@@ -1,10 +1,8 @@
 package org.yyyf.game.entity;
 
-import org.yyyf.game.tool.Vector2D;
-
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Board {
@@ -12,12 +10,13 @@ public class Board {
         //可以正常放棋，可以正常放棋且获胜，不能正常放棋
         ready,winning,refuse
     }
+
     private int id;
     private int winning_goal = 5;
-    private Set<Vector2D> chess;
+    private Set<Piece> chess;
 
     public Board() {
-        chess = new HashSet<>();
+        chess = new LinkedHashSet<>();
     }
 
     public Board(int id) {
@@ -25,24 +24,39 @@ public class Board {
         this.id = id;
     }
 
+    public Piece getLastPiece() {
+        Piece[] array = chess.toArray(new Piece[0]);
+        return array[array.length-1];
+    }
+
     public void reset(){
         chess.clear();
+    }
+
+    public void resetLastPut() {
+        Iterator<Piece> iterator = chess.iterator();
+        Piece lastPutPiece = null;
+        while (iterator.hasNext()){
+            lastPutPiece = iterator.next();
+        }
+        if(lastPutPiece != null)
+            chess.remove(lastPutPiece);
     }
 
     public int getId() {
         return id;
     }
 
-    public State putChess(Vector2D position){
+    public State putChess(Piece position){
         if (chess.contains(position)) return State.refuse;
         chess.add(position);
         return isWin(position)? State.winning : State.ready;
     }
 
-    private boolean isWin(Vector2D position){
+    private boolean isWin(Piece position){
         //===============================================================水平
         int winning_count = 0;
-        Vector2D temp = new Vector2D(position);
+        Piece temp = new Piece(position);
         boolean positive = true;
         for (int i = 0; i < winning_goal; i++) {
             if(positive){
@@ -51,7 +65,7 @@ public class Board {
                     winning_count++;
                 }
                 else{
-                    temp = new Vector2D(position);
+                    temp = new Piece(position);
                     positive = false;
                     i--;
                 }
@@ -67,7 +81,7 @@ public class Board {
         }
         //===============================================================垂直
         winning_count = 0;
-        temp = new Vector2D(position);
+        temp = new Piece(position);
         positive = true;
         for (int i = 0; i < winning_goal; i++) {
             if(positive){
@@ -76,7 +90,7 @@ public class Board {
                     winning_count++;
                 }
                 else{
-                    temp = new Vector2D(position);
+                    temp = new Piece(position);
                     positive = false;
                     i--;
                 }
@@ -92,7 +106,7 @@ public class Board {
         }
         //===============================================================斜向 /
         winning_count = 0;
-        temp = new Vector2D(position);
+        temp = new Piece(position);
         positive = true;
         for (int i = 0; i < winning_goal; i++) {
             if(positive){
@@ -102,7 +116,7 @@ public class Board {
                     winning_count++;
                 }
                 else{
-                    temp = new Vector2D(position);
+                    temp = new Piece(position);
                     positive = false;
                     i--;
                 }
@@ -119,7 +133,7 @@ public class Board {
         }
         //===============================================================反斜向 \
         winning_count = 0;
-        temp = new Vector2D(position);
+        temp = new Piece(position);
         positive = true;
         for (int i = 0; i < winning_goal; i++) {
             if(positive){
@@ -129,7 +143,7 @@ public class Board {
                     winning_count++;
                 }
                 else{
-                    temp = new Vector2D(position);
+                    temp = new Piece(position);
                     positive = false;
                     i--;
                 }

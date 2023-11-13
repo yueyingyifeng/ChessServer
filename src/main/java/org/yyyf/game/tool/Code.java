@@ -20,6 +20,7 @@ public class Code {
     public static final int SomeOnePutAChess = 205;
     public static final int HostLeave = 206;
     public static final int SomeOneLeaveRoom = 207;
+    public static final int RegretList = 208;
     public static final int RestartList = 232;
     public static final int Winning = 233;
     public static final int Accept = 234;

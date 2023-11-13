@@ -11,14 +11,19 @@ import org.yyyf.game.manager.RoomManager;
 import org.java_websocket.WebSocket;
 import org.yyyf.game.tool.Code;
 import org.yyyf.game.tool.Log;
-import org.yyyf.game.tool.Vector2D;
+import org.yyyf.game.entity.Piece;
 
 public class Game {
 
-
-
+    //仅记录客户端给服务端的类型
     public enum Type{
-        LeaveServer, JoinARoom, CreateRoom, PutChess, Error, LeaveRoom, HeartBeat, LoginServer,GameReadyToStart,GetPlayerAndRoomList,Restart
+        LoginServer, LeaveServer,
+        JoinARoom, LeaveRoom, CreateRoom,
+        GameReadyToStart,  PutChess,
+        GetPlayerAndRoomList,
+        Restart, Regret,
+        HeartBeat,
+        Error
     }
     public Type analyze(int type) {
         switch (type){
@@ -42,6 +47,8 @@ public class Game {
                 return Type.GetPlayerAndRoomList;
             case Code.Restart:
                 return Type.Restart;
+            case Code.Regret:
+                return  Type.Regret;
             default:
                 return Type.Error;
         }
@@ -121,7 +128,7 @@ public class Game {
         int id = data.getIntValue("id");
         Room room = roomManager.findRoomById(id);
         Player player = playerManager.findPlayerById(id);
-        Vector2D position = new Vector2D(v.getInteger("x"),v.getIntValue("y"));
+        Piece position = new Piece(id,v.getInteger("x"),v.getIntValue("y"),v.getIntValue("no"));
 
         sendPermissionToPlayer(player,true,Code.Accept);
 
@@ -145,6 +152,8 @@ public class Game {
                 chessPackage.put("data",chess);
                 room.sendMsgToAllPlayerNotThisOne(chessPackage.toString(),id);
                 sendPermissionToPlayer(player,true,Code.Accept);
+
+                room.resetRegretList();
                 break;
             case refuse:
             default:
@@ -153,9 +162,21 @@ public class Game {
 
     }
 
+    public void regret(JSONObject data) {
+        int id = data.getIntValue("id");
+        boolean isMyTure = data.getBooleanValue("isMyTure");
+        Room room = roomManager.findRoomById(id);
+        room.someoneRegret(id);
+        if(room.hasMajorityAgreedToRegret())
+            room.regret(isMyTure,id);
 
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type",Code.RegretList);
+        jsonObject.put("ids",room.getRegretList());
+        jsonObject.put("agree",room.hasMajorityAgreedToRegret());
 
-
+        room.sendMsgToAllPlayer(jsonObject.toString());
+    }
     public void playerLeaveRoom(JSONObject data){
         int leaveId = data.getIntValue("id");
         Room room = roomManager.findRoomById(playerManager.findPlayerRoomId(leaveId));
@@ -186,7 +207,7 @@ public class Game {
                 room.resetBoard();
             }
 
-            if(room != null && room.capacity() == 0){
+            if(room != null && room.size() == 0){
                 roomManager.removeRoomById(room.getId());
             }
             playerManager.removePlayerFromRoomById(leaveId);
@@ -269,7 +290,7 @@ public class Game {
         playerManager.setAllPlayerDead();
     }
 
-    public String ErrorMsg(){
+    static public String ErrorMsg(){
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("type",Code.WrongClientMsg);
         return jsonObject.toString();
@@ -294,6 +315,7 @@ public class Game {
         return jsonObject;
     }
 
+    //我完全不知道这个方法到底有没有起作用。。。但。。。放这把，凑行数
     private void sleep(int i) {
         try {
             Thread.sleep(i);
@@ -304,4 +326,3 @@ public class Game {
     }
 
 }
-// 8197 3956

@@ -1,10 +1,10 @@
 package org.yyyf.game.entity;
 
 import com.alibaba.fastjson.JSONArray;
-import org.yyyf.game.tool.Vector2D;
+import org.yyyf.game.Game;
+import org.yyyf.game.manager.PlayerManager;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 public class Room {
@@ -12,17 +12,28 @@ public class Room {
     private final int hostId;
     private final List<Player> players;
     private final List<Board> boards;
+    private final List<Integer> regretList;//悔棋名单
 
     public Room(Player host){
         players = new ArrayList<>(maximumPlayer);
-        boards = new LinkedList<>();
+        regretList = new ArrayList<>(maximumPlayer);
+        boards = new ArrayList<>(maximumPlayer);
+
         players.add(host);
         boards.add(
                 new Board(host.id)
         );
         hostId = host.id;
     }
-    //添加玩家，如果满了就返回假
+
+    public Board findBoardById(int id){
+        for(Board b : boards)
+            if(b.getId() == id)
+                return b;
+        return null;
+    }
+
+    //添加玩家
     public void addPlayer(Player player){
         if(players.size() >= maximumPlayer) return;
         players.add(player);
@@ -60,7 +71,7 @@ public class Room {
         for(Player p : players)
             p.conn.send(msg);
     }
-    public Board.State putAChess(int id, Vector2D position){
+    public Board.State putAChess(int id, Piece position){
         for(Board board : boards){
             if(board.getId() == id){
                 return board.putChess(position);
@@ -69,7 +80,7 @@ public class Room {
         return Board.State.refuse;
     }
 
-    public int capacity() {
+    public int size() {
         return players.size();
     }
 
@@ -100,5 +111,47 @@ public class Room {
         for(Board b : boards){
             b.reset();
         }
+    }
+
+    public boolean isOneOfUs(int id){
+        boolean isOneOfUs = false;
+        for(Player p : players)
+            if(p.id == id)
+                return true;
+        return false;
+    }
+
+    public void someoneRegret(int id){
+        if(!isOneOfUs(id)){
+            Player player = PlayerManager.getInstance().findPlayerById(id);
+            if(player != null)
+                player.conn.send(Game.ErrorMsg());
+        }
+
+        regretList.add(id);
+    }
+
+    public void resetRegretList(){
+        regretList.clear();
+    }
+
+    public void regret(boolean isMyTure,int id) {
+        if(isMyTure){
+            for(Board b : boards)
+                b.resetLastPut();
+        }
+        else{
+            Board board = findBoardById(id);
+            board.resetLastPut();
+        }
+    }
+    public JSONArray getRegretList(){
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.addAll(regretList);
+
+        return jsonArray;
+    }
+    public boolean hasMajorityAgreedToRegret() {
+            return regretList.size() > (players.size() / 2);
     }
 }
