@@ -88,11 +88,19 @@ public class Game {
     public void playerJoinARoom(JSONObject data) {
         int hostId = data.getIntValue("hostId");        //要加入房间的id
         int guestId = data.getIntValue("guestId");      //加入者的id
+
+        if(hostId == guestId){
+            Player player = playerManager.findPlayerById(guestId);
+            if(player!= null)
+                player.conn.send(ErrorMsg());
+            return;
+        }
+
         Player player = playerManager.findPlayerById(guestId);
         Room room = roomManager.findRoomById(hostId);
 
         if(room.isRoomFull()){
-            sleep(500);
+//            sleep(500);
             sendPermissionToPlayer(player,!room.isRoomFull(),Code.AcceptJoin);
             sendPlayerAndRoomList();
             return;
@@ -111,7 +119,6 @@ public class Game {
 
         room.sendMsgToAllPlayerNotThisOne(jsonObject.toString(),guestId);
     }
-
 
     public void createRoom(JSONObject data) {
         int id = data.getIntValue("id");
@@ -146,7 +153,7 @@ public class Game {
                 JSONObject chess = new JSONObject();
                 chess.put("id",id);
                 chess.put("position",position.toJSON());
-
+                chess.put("no",position.no);
                 JSONObject chessPackage = new JSONObject();
                 chessPackage.put("type",Code.SomeOnePutAChess);
                 chessPackage.put("data",chess);
@@ -165,18 +172,33 @@ public class Game {
     public void regret(JSONObject data) {
         int id = data.getIntValue("id");
         boolean isMyTure = data.getBooleanValue("isMyTure");
+        boolean agree = data.getBooleanValue("agree");
+
         Room room = roomManager.findRoomById(id);
-        room.someoneRegret(id);
+        if(room == null) {
+            Player player = playerManager.findPlayerById(id);
+            if(player != null)
+                player.conn.send(ErrorMsg());
+            return;
+        }
+        if(agree)
+            room.addToRegretList(id);
         if(room.hasMajorityAgreedToRegret())
             room.regret(isMyTure,id);
 
+
+        JSONObject d = new JSONObject();
+        d.put("ids",room.getRegretList());
+        d.put("agree",room.hasMajorityAgreedToRegret());
+
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("type",Code.RegretList);
-        jsonObject.put("ids",room.getRegretList());
-        jsonObject.put("agree",room.hasMajorityAgreedToRegret());
+        jsonObject.put("data",d);
 
-        room.sendMsgToAllPlayer(jsonObject.toString());
+
+        room.sendMsgToAllPlayerNotThisOne(jsonObject.toString(),id);
     }
+
     public void playerLeaveRoom(JSONObject data){
         int leaveId = data.getIntValue("id");
         Room room = roomManager.findRoomById(playerManager.findPlayerRoomId(leaveId));
@@ -302,7 +324,6 @@ public class Game {
         jsonObject.put("accept",permit);
         player.conn.send(jsonObject.toString());
     }
-
 
     private void sendPlayerAndRoomList(){
         playerManager.sendAllPlayer(getPlayerList().toString());

@@ -11,7 +11,6 @@ public class Log {
     private static String getTraceInfo() {
         StringBuffer sb = new StringBuffer();
         StackTraceElement[] stacks = new Throwable().getStackTrace();
-        int stacksLen = stacks.length;
         sb.append("class: ").append(stacks[1].getClassName())
                 .append("; method: ").append(stacks[1].getMethodName())
                 .append("; Line: ").append(stacks[1].getLineNumber());

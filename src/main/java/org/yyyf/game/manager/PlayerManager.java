@@ -52,7 +52,6 @@ public class PlayerManager {
     }
 
     public synchronized void removeDeadPlayer(){
-        Log.i("Check dead");
         List<Player> playersToRemove = new LinkedList<>();
 
         for(Player player : playerList){

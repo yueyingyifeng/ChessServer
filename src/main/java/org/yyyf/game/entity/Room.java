@@ -3,6 +3,7 @@ package org.yyyf.game.entity;
 import com.alibaba.fastjson.JSONArray;
 import org.yyyf.game.Game;
 import org.yyyf.game.manager.PlayerManager;
+import org.yyyf.game.tool.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,7 +122,7 @@ public class Room {
         return false;
     }
 
-    public void someoneRegret(int id){
+    public void addToRegretList(int id){
         if(!isOneOfUs(id)){
             Player player = PlayerManager.getInstance().findPlayerById(id);
             if(player != null)
@@ -136,7 +137,7 @@ public class Room {
     }
 
     public void regret(boolean isMyTure,int id) {
-        if(isMyTure){
+        if(!isMyTure){
             for(Board b : boards)
                 b.resetLastPut();
         }
